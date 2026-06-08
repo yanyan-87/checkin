@@ -271,13 +271,14 @@
             try {
                 // 撈取該人員所有資料取得有資料的月份
                 const res = await fetch(`${N8N_QUERY_URL}?name=${encodeURIComponent(name)}&month=all`);
-                const data = await res.json();
+                const text = await res.text();
+                const data = JSON.parse(text);
 
                 // 提取不重複的月份
                 const months = [...new Set(
                     data
-                        .filter(r => r.json?.date)
-                        .map(r => r.json.date.substring(0, 7))
+                        .filter(r => r.date)
+                        .map(r => r.date.substring(0, 7))
                 )].sort().reverse();
 
                 if (months.length === 0) {
@@ -309,9 +310,10 @@
 
             try {
                 const res = await fetch(`${N8N_QUERY_URL}?name=${encodeURIComponent(name)}&month=${month}`);
-                const data = await res.json();
+                const text = await res.text();
+                const data = JSON.parse(text);
 
-                const records = data.filter(r => r.json?.date);
+                const records = data.filter(r => r.date);
 
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('queryBtn').disabled = false;
@@ -320,7 +322,7 @@
                 document.getElementById('resultHeader').textContent =
                     `${name}｜${year}年${parseInt(mon)}月 共 ${records.length} 筆`;
 
-                const completeCount = records.filter(r => r.json['上班時間'] && r.json['下班時間']).length;
+                const completeCount = records.filter(r => r['上班時間'] && r['下班時間']).length;
                 document.getElementById('resultSummary').textContent =
                     `完整打卡 ${completeCount} 天 ／ 總計 ${records.length} 筆記錄`;
 
@@ -328,8 +330,7 @@
                     document.getElementById('resultList').innerHTML =
                         '<div class="no-data">此月份無考勤記錄</div>';
                 } else {
-                    document.getElementById('resultList').innerHTML = records.map(r => {
-                        const d = r.json;
+                    document.getElementById('resultList').innerHTML = records.map(d => {
                         const hasIn = d['上班時間'] && d['上班時間'].trim() !== '';
                         const hasOut = d['下班時間'] && d['下班時間'].trim() !== '';
 
