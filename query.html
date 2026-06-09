@@ -286,11 +286,12 @@
                     return;
                 }
 
-                monthSelect.innerHTML = months.map(m => {
+                monthSelect.innerHTML = months.map((m, i) => {
                     const [year, month] = m.split('-');
-                    return `<option value="${m}">${year}年${parseInt(month)}月</option>`;
+                    return `<option value="${m}" ${i === 0 ? 'selected' : ''}>${year}年${parseInt(month)}月</option>`;
                 }).join('');
 
+                monthSelect.style.display = 'block';
                 queryBtn.disabled = false;
 
             } catch (err) {
