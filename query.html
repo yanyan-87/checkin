@@ -295,6 +295,7 @@
 
             } catch (err) {
                 monthSelect.innerHTML = '<option value="">-- 載入失敗 --</option>';
+                alert('載入月份失敗：' + err.message);
             }
         }
 
