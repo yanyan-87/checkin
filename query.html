@@ -127,6 +127,12 @@
             margin-bottom: 16px; font-size: 13px; color: #1a8a36;
             font-weight: 600; text-align: center;
         }
+
+        #exportBtn {
+            background: #1d6f42;
+            margin-top: 16px;
+        }
+        #exportBtn:hover:not(:disabled) { background: #155232; }
     </style>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
@@ -169,8 +175,11 @@
             <div class="result-header" id="resultHeader"></div>
             <div class="summary" id="resultSummary"></div>
             <div id="resultList"></div>
+            <button id="exportBtn" onclick="exportExcel()" style="display:none">📥 匯出 Excel</button>
         </div>
     </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <script>
         const LIFF_ID = "2010287664-32ozNnEE";
@@ -260,6 +269,9 @@
                 const text = await res.text();
                 const data = JSON.parse(text);
                 const records = data.filter(r => r.date);
+                currentRecords = records;
+                currentName = name;
+                currentMonth = month;
 
                 hideLoading();
                 document.getElementById('queryBtn').disabled = false;
@@ -274,6 +286,7 @@
 
                 if (records.length === 0) {
                     document.getElementById('resultList').innerHTML = '<div class="no-data">此月份無考勤記錄</div>';
+                    document.getElementById('exportBtn').style.display = 'none';
                 } else {
                     document.getElementById('resultList').innerHTML = records.map(d => {
                         const hasIn = d['上班時間'] && d['上班時間'].trim() !== '';
@@ -294,6 +307,7 @@
                             </div>
                         `;
                     }).join('');
+                    document.getElementById('exportBtn').style.display = 'block';
                 }
 
                 document.getElementById('resultSection').style.display = 'block';
@@ -303,6 +317,51 @@
                 document.getElementById('queryBtn').disabled = false;
                 alert('查詢失敗：' + err.message);
             }
+        }
+
+        let currentRecords = [];
+        let currentName = '';
+        let currentMonth = '';
+
+        function exportExcel() {
+            if (!currentRecords.length) return;
+
+            const wsData = [
+                ['日期', '姓名', '班別', '上班時間', '下班時間', '備註']
+            ];
+
+            currentRecords.forEach(d => {
+                const hasIn = d['上班時間'] && d['上班時間'].trim() !== '';
+                const hasOut = d['下班時間'] && d['下班時間'].trim() !== '';
+                let note = '';
+                if (!hasIn && !hasOut) note = '上下班均未打卡';
+                else if (!hasIn) note = '未打上班卡';
+                else if (!hasOut) note = '未打下班卡';
+
+                wsData.push([
+                    d.date,
+                    d.name,
+                    d.shift || '',
+                    d['上班時間'] || '',
+                    d['下班時間'] || '',
+                    note
+                ]);
+            });
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+            // 欄寬設定
+            ws['!cols'] = [
+                { wch: 14 }, { wch: 10 }, { wch: 8 },
+                { wch: 10 }, { wch: 10 }, { wch: 16 }
+            ];
+
+            XLSX.utils.book_append_sheet(wb, ws, '考勤記錄');
+
+            const [year, mon] = currentMonth.split('-');
+            const fileName = `${currentName}_${year}年${parseInt(mon)}月考勤.xlsx`;
+            XLSX.writeFile(wb, fileName);
         }
     </script>
 </body>
