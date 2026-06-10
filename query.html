@@ -180,7 +180,6 @@
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <script>
         const LIFF_ID = "2010287664-32ozNnEE";
@@ -327,9 +326,11 @@
         function exportExcel() {
             if (!currentRecords.length) return;
 
-            const wsData = [
-                ['日期', '姓名', '班別', '上班時間', '下班時間', '備註']
-            ];
+            const [year, mon] = currentMonth.split('-');
+            const fileName = `${currentName}_${year}年${parseInt(mon)}月考勤.csv`;
+
+            // 產生 CSV 內容（加 BOM 讓 Excel 正確顯示中文）
+            const rows = [['日期', '姓名', '班別', '上班時間', '下班時間', '備註']];
 
             currentRecords.forEach(d => {
                 const hasIn = d['上班時間'] && d['上班時間'].trim() !== '';
@@ -338,36 +339,31 @@
                 if (!hasIn && !hasOut) note = '上下班均未打卡';
                 else if (!hasIn) note = '未打上班卡';
                 else if (!hasOut) note = '未打下班卡';
-
-                wsData.push([
-                    d.date,
-                    d.name,
-                    d.shift || '',
-                    d['上班時間'] || '',
-                    d['下班時間'] || '',
-                    note
-                ]);
+                rows.push([d.date, d.name, d.shift || '', d['上班時間'] || '', d['下班時間'] || '', note]);
             });
 
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.aoa_to_sheet(wsData);
-            ws['!cols'] = [
-                { wch: 14 }, { wch: 10 }, { wch: 8 },
-                { wch: 10 }, { wch: 10 }, { wch: 16 }
-            ];
-            XLSX.utils.book_append_sheet(wb, ws, '考勤記錄');
+            const csv = '\uFEFF' + rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
 
-            const [year, mon] = currentMonth.split('-');
-            const fileName = `${currentName}_${year}年${parseInt(mon)}月考勤.xlsx`;
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
 
-            // 產生 base64，用外部瀏覽器開啟下載
-            const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
-            const dataUrl = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${wbout}`;
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 500);
 
-            liff.openWindow({
-                url: dataUrl,
-                external: true
-            });
+            // 若 LIFF 擋住，改用外部瀏覽器
+            setTimeout(() => {
+                try {
+                    liff.openWindow({ url: url, external: true });
+                } catch(e) {}
+            }, 600);
         }
     </script>
 </body>
