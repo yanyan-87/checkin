@@ -351,18 +351,23 @@
 
             const wb = XLSX.utils.book_new();
             const ws = XLSX.utils.aoa_to_sheet(wsData);
-
-            // 欄寬設定
             ws['!cols'] = [
                 { wch: 14 }, { wch: 10 }, { wch: 8 },
                 { wch: 10 }, { wch: 10 }, { wch: 16 }
             ];
-
             XLSX.utils.book_append_sheet(wb, ws, '考勤記錄');
 
             const [year, mon] = currentMonth.split('-');
             const fileName = `${currentName}_${year}年${parseInt(mon)}月考勤.xlsx`;
-            XLSX.writeFile(wb, fileName);
+
+            // 產生 base64，用外部瀏覽器開啟下載
+            const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
+            const dataUrl = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${wbout}`;
+
+            liff.openWindow({
+                url: dataUrl,
+                external: true
+            });
         }
     </script>
 </body>
