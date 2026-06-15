@@ -1,319 +1,404 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>打卡系統</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>打卡系統</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+font-family: 'Helvetica Neue', Arial, sans-serif;
+background: #f0f2f5;
+min-height: 100vh;
+display: flex;
+align-items: center;
+justify-content: center;
+padding: 20px;
+}
+.card {
+background: #ffffff;
+border-radius: 20px;
+padding: 32px 24px;
+width: 100%;
+max-width: 400px;
+box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+}
+.logo {
+text-align: center;
+margin-bottom: 8px;
+font-size: 36px;
+}
+h2 {
+text-align: center;
+font-size: 22px;
+color: #1a1a1a;
+margin-bottom: 6px;
+font-weight: 700;
+}
+.subtitle {
+text-align: center;
+font-size: 13px;
+color: #888;
+margin-bottom: 20px;
+}
+#status {
+text-align: center;
+font-size: 14px;
+font-weight: 600;
+padding: 10px 16px;
+border-radius: 10px;
+margin-bottom: 20px;
+background: #fff8e6;
+color: #e07b00;
+}
+#status.ready { background: #e8f8ec; color: #1a8a36; }
+#status.error { background: #fdecea; color: #c0392b; }
+/* 人員選擇按鈕區 */
+.section-label {
+font-size: 13px;
+font-weight: 600;
+color: #555;
+margin-bottom: 10px;
+letter-spacing: 0.3px;
+}
+.person-grid {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 10px;
+margin-bottom: 8px;
+}
+.person-btn {
+padding: 14px 8px;
+font-size: 17px;
+font-weight: 600;
+border: 2.5px solid #e8e8e8;
+border-radius: 14px;
+background: #fafafa;
+color: #555;
+cursor: pointer;
+transition: all 0.18s ease;
+text-align: center;
+width: 100%;
+}
+.person-btn:active { transform: scale(0.96); }
+.person-btn.selected {
+border-color: #00B900;
+background: #e8f8ec;
+color: #1a6b2a;
+box-shadow: 0 2px 10px rgba(0,185,0,0.15);
+}
+/* 班別顯示 */
+#shiftDisplay {
+text-align: center;
+font-size: 14px;
+color: #666;
+margin-bottom: 20px;
+min-height: 28px;
+}
+.shift-badge {
+display: inline-block;
+font-size: 12px;
+font-weight: 700;
+padding: 4px 12px;
+border-radius: 20px;
+margin-left: 6px;
+vertical-align: middle;
+}
+.shift-badge.morning { background: #fff3cd; color: #856404; }
+.shift-badge.night { background: #d1d5f0; color: #3a3f8f; }
+/* 上下班按鈕 */
+.action-row {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 12px;
+}
+.action-btn {
+padding: 18px 8px;
+font-size: 17px;
+font-weight: 700;
+border: none;
+border-radius: 14px;
+cursor: pointer;
+transition: all 0.18s ease;
+letter-spacing: 0.5px;
+width: 100%;
+}
+.action-btn:active { transform: scale(0.97); }
+#btnIn {
+background: #00B900;
+color: white;
+box-shadow: 0 4px 14px rgba(0,185,0,0.25);
+}
+#btnIn:hover:not(:disabled) {
+background: #009900;
+box-shadow: 0 6px 18px rgba(0,185,0,0.35);
+}
+#btnOut {
+background: #3d8ef0;
+color: white;
+box-shadow: 0 4px 14px rgba(61,142,240,0.25);
+}
+#btnOut:hover:not(:disabled) {
+background: #2b7de0;
+box-shadow: 0 6px 18px rgba(61,142,240,0.35);
+}
+.action-btn:disabled {
+background: #d0d0d0 !important;
+color: #999 !important;
+box-shadow: none !important;
+cursor: not-allowed;
+}
+/* 加班功能暫時隱藏 */
+.overtime-section { display: none; }
 
-        body {
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            background: #f0f2f5;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .card {
-            background: #ffffff;
-            border-radius: 20px;
-            padding: 32px 24px;
-            width: 100%;
-            max-width: 400px;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.10);
-        }
-
-        .logo {
-            text-align: center;
-            margin-bottom: 8px;
-            font-size: 36px;
-        }
-
-        h2 {
-            text-align: center;
-            font-size: 22px;
-            color: #1a1a1a;
-            margin-bottom: 6px;
-            font-weight: 700;
-        }
-
-        .subtitle {
-            text-align: center;
-            font-size: 13px;
-            color: #888;
-            margin-bottom: 20px;
-        }
-
-        #status {
-            text-align: center;
-            font-size: 14px;
-            font-weight: 600;
-            padding: 10px 16px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            background: #fff8e6;
-            color: #e07b00;
-        }
-
-        #status.ready { background: #e8f8ec; color: #1a8a36; }
-        #status.error { background: #fdecea; color: #c0392b; }
-
-        /* 人員選擇按鈕區 */
-        .section-label {
-            font-size: 13px;
-            font-weight: 600;
-            color: #555;
-            margin-bottom: 10px;
-            letter-spacing: 0.3px;
-        }
-
-        .person-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 8px;
-        }
-
-        .person-btn {
-            padding: 14px 8px;
-            font-size: 17px;
-            font-weight: 600;
-            border: 2.5px solid #e8e8e8;
-            border-radius: 14px;
-            background: #fafafa;
-            color: #555;
-            cursor: pointer;
-            transition: all 0.18s ease;
-            text-align: center;
-            width: 100%;
-        }
-
-        .person-btn:active { transform: scale(0.96); }
-
-        .person-btn.selected {
-            border-color: #00B900;
-            background: #e8f8ec;
-            color: #1a6b2a;
-            box-shadow: 0 2px 10px rgba(0,185,0,0.15);
-        }
-
-        /* 班別顯示 */
-        #shiftDisplay {
-            text-align: center;
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 20px;
-            min-height: 28px;
-        }
-
-        .shift-badge {
-            display: inline-block;
-            font-size: 12px;
-            font-weight: 700;
-            padding: 4px 12px;
-            border-radius: 20px;
-            margin-left: 6px;
-            vertical-align: middle;
-        }
-
-        .shift-badge.morning { background: #fff3cd; color: #856404; }
-        .shift-badge.night { background: #d1d5f0; color: #3a3f8f; }
-
-        /* 上下班按鈕 */
-        .action-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-
-        .action-btn {
-            padding: 18px 8px;
-            font-size: 17px;
-            font-weight: 700;
-            border: none;
-            border-radius: 14px;
-            cursor: pointer;
-            transition: all 0.18s ease;
-            letter-spacing: 0.5px;
-            width: 100%;
-        }
-
-        .action-btn:active { transform: scale(0.97); }
-
-        #btnIn {
-            background: #00B900;
-            color: white;
-            box-shadow: 0 4px 14px rgba(0,185,0,0.25);
-        }
-
-        #btnIn:hover:not(:disabled) {
-            background: #009900;
-            box-shadow: 0 6px 18px rgba(0,185,0,0.35);
-        }
-
-        #btnOut {
-            background: #3d8ef0;
-            color: white;
-            box-shadow: 0 4px 14px rgba(61,142,240,0.25);
-        }
-
-        #btnOut:hover:not(:disabled) {
-            background: #2b7de0;
-            box-shadow: 0 6px 18px rgba(61,142,240,0.35);
-        }
-
-        .action-btn:disabled {
-            background: #d0d0d0 !important;
-            color: #999 !important;
-            box-shadow: none !important;
-            cursor: not-allowed;
-        }
-
-        /* 加班功能暫時隱藏 */
-        .overtime-section { display: none; }
-    </style>
-    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+/* 代班人員姓名輸入彈窗 */
+.modal-overlay {
+position: fixed;
+top: 0; left: 0; right: 0; bottom: 0;
+background: rgba(0,0,0,0.45);
+display: none;
+align-items: center;
+justify-content: center;
+z-index: 1000;
+padding: 20px;
+}
+.modal-overlay.show { display: flex; }
+.modal-box {
+background: #fff;
+border-radius: 16px;
+padding: 24px 20px;
+width: 100%;
+max-width: 320px;
+box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+}
+.modal-title {
+font-size: 16px;
+font-weight: 700;
+color: #1a1a1a;
+margin-bottom: 14px;
+text-align: center;
+}
+.modal-input {
+width: 100%;
+padding: 12px 14px;
+font-size: 16px;
+border: 2px solid #e8e8e8;
+border-radius: 10px;
+margin-bottom: 16px;
+outline: none;
+}
+.modal-input:focus { border-color: #00B900; }
+.modal-buttons {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 10px;
+}
+.modal-btn {
+padding: 12px 8px;
+font-size: 15px;
+font-weight: 700;
+border: none;
+border-radius: 10px;
+cursor: pointer;
+}
+.modal-btn:active { transform: scale(0.97); }
+.modal-btn.cancel { background: #f0f0f0; color: #666; }
+.modal-btn.confirm { background: #00B900; color: #fff; }
+</style>
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
-    <div class="card">
-        <div class="logo">🕐</div>
-        <h2>打卡系統</h2>
-        <p class="subtitle">財盛南港經貿</p>
+<div class="card">
+<div class="logo">🕐</div>
+<h2>打卡系統</h2>
+<p class="subtitle">財盛南港經貿</p>
 
-        <div id="status">⏳ 正在連線 LINE 系統，請稍候...</div>
+<div id="status">⏳ 正在連線 LINE 系統，請稍候...</div>
 
-        <div class="section-label">選擇打卡人員</div>
-        <div class="person-grid">
-            <button class="person-btn" data-name="廖美真" data-shift="早班" onclick="selectPerson(this)">廖美真</button>
-            <button class="person-btn" data-name="王淑慧" data-shift="晚班" onclick="selectPerson(this)">王淑慧</button>
-            <button class="person-btn" data-name="代班早班" data-shift="早班" onclick="selectPerson(this)">代班早班</button>
-            <button class="person-btn" data-name="代班晚班" data-shift="晚班" onclick="selectPerson(this)">代班晚班</button>
-        </div>
+<div class="section-label">選擇打卡人員</div>
+<div class="person-grid">
+<button class="person-btn" data-name="廖美真" data-shift="早班" onclick="selectPerson(this)">廖美真</button>
+<button class="person-btn" data-name="王淑慧" data-shift="晚班" onclick="selectPerson(this)">王淑慧</button>
+<button class="person-btn" data-name="代班早班" data-shift="早班" onclick="selectPerson(this)">代班早班</button>
+<button class="person-btn" data-name="代班晚班" data-shift="晚班" onclick="selectPerson(this)">代班晚班</button>
+</div>
 
-        <div id="shiftDisplay"></div>
+<div id="shiftDisplay"></div>
 
-        <div class="action-row">
-            <button class="action-btn" id="btnIn" onclick="submitCheck('上班')" disabled>上班打卡</button>
-            <button class="action-btn" id="btnOut" onclick="submitCheck('下班')" disabled>下班打卡</button>
-        </div>
+<div class="action-row">
+<button class="action-btn" id="btnIn" onclick="submitCheck('上班')" disabled>上班打卡</button>
+<button class="action-btn" id="btnOut" onclick="submitCheck('下班')" disabled>下班打卡</button>
+</div>
 
-        <div class="overtime-section">
-            <button id="btnOT" onclick="submitCheck('加班開始')" disabled>加班開始</button>
-            <button id="btnOTEnd" onclick="submitCheck('加班結束')" disabled>加班結束</button>
-        </div>
-    </div>
+<div class="overtime-section">
+<button id="btnOT" onclick="submitCheck('加班開始')" disabled>加班開始</button>
+<button id="btnOTEnd" onclick="submitCheck('加班結束')" disabled>加班結束</button>
+</div>
+</div>
 
-    <script>
-        const LIFF_ID = "2010287664-sKwhY5g4";
-        const WEBHOOK_URL = "https://yan-n8n.zeabur.app/webhook/line-checkin";
-        const ALLOWED_IPS = ["210.63.216.41", "180.176.240.226", "123.193.216.3"];
+<!-- 代班人員姓名輸入彈窗 -->
+<div class="modal-overlay" id="nameModal">
+<div class="modal-box">
+<div class="modal-title">請輸入您的姓名</div>
+<input type="text" id="nameInput" class="modal-input" placeholder="例如：陳小明" maxlength="10"
+       onkeypress="if(event.key==='Enter'){ event.preventDefault(); confirmNameInput(); }">
+<div class="modal-buttons">
+<button class="modal-btn cancel" onclick="cancelNameInput()">取消</button>
+<button class="modal-btn confirm" onclick="confirmNameInput()">確定</button>
+</div>
+</div>
+</div>
 
-        let selectedName = null;
-        let selectedShift = null;
-        let liffReady = false;
+<script>
+const LIFF_ID = "2010287664-sKwhY5g4";
+const WEBHOOK_URL = "https://yan-n8n.zeabur.app/webhook/line-checkin";
+const ALLOWED_IPS = ["210.63.216.41", "180.176.240.226", "123.193.216.3"];
 
-        function selectPerson(btn) {
-            // 移除所有選中狀態
-            document.querySelectorAll('.person-btn').forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
+let selectedName = null;
+let selectedShift = null;
+let liffReady = false;
 
-            selectedName = btn.getAttribute('data-name');
-            selectedShift = btn.getAttribute('data-shift');
+// 暫存代班按鈕資訊，等使用者輸入姓名後再套用
+let pendingBtn = null;
+let pendingShiftLabel = null;
+let pendingShift = null;
 
-            // 更新班別顯示
-            const badge = document.getElementById('shiftDisplay');
-            const isNight = selectedShift === '晚班';
-            badge.innerHTML = `班別：<span class="shift-badge ${isNight ? 'night' : 'morning'}">${isNight ? '🌙 晚班' : '☀️ 早班'}</span>`;
+function selectPerson(btn) {
+const name = btn.getAttribute('data-name');
+const shift = btn.getAttribute('data-shift');
 
-            // 如果 LIFF 已就緒，啟用打卡按鈕
-            if (liffReady) {
-                document.getElementById('btnIn').disabled = false;
-                document.getElementById('btnOut').disabled = false;
-            }
-        }
+// 代班早班 / 代班晚班：先彈出輸入姓名視窗
+if (name === '代班早班' || name === '代班晚班') {
+pendingBtn = btn;
+pendingShiftLabel = name;
+pendingShift = shift;
+document.getElementById('nameInput').value = '';
+document.getElementById('nameModal').classList.add('show');
+setTimeout(() => document.getElementById('nameInput').focus(), 100);
+return;
+}
 
-        function setActionButtons(enabled) {
-            document.getElementById('btnIn').disabled = !enabled || !selectedName;
-            document.getElementById('btnOut').disabled = !enabled || !selectedName;
-        }
+applySelection(btn, name, shift);
+}
 
-        // 初始化 LIFF
-        liff.init({ liffId: LIFF_ID })
-            .then(() => {
-                if (!liff.isLoggedIn()) {
-                    liff.login();
-                    return;
-                }
-                liffReady = true;
-                const statusEl = document.getElementById('status');
-                statusEl.textContent = "✅ 請選擇打卡人員";
-                statusEl.className = 'ready';
-            })
-            .catch((err) => {
-                const statusEl = document.getElementById('status');
-                statusEl.textContent = "❌ 初始化失敗：" + err.message;
-                statusEl.className = 'error';
-            });
+function applySelection(btn, name, shift) {
+// 移除所有選中狀態
+document.querySelectorAll('.person-btn').forEach(b => b.classList.remove('selected'));
+btn.classList.add('selected');
 
-        async function submitCheck(actionType) {
-            if (!selectedName) {
-                alert("請先選擇打卡人員！");
-                return;
-            }
+selectedName = name;
+selectedShift = shift;
 
-            const statusEl = document.getElementById('status');
-            setActionButtons(false);
-            statusEl.textContent = "⏳ 資料傳送中...";
-            statusEl.className = '';
-            statusEl.style.background = '#fff8e6';
-            statusEl.style.color = '#e07b00';
+// 更新班別顯示（同時顯示打卡姓名）
+const badge = document.getElementById('shiftDisplay');
+const isNight = selectedShift === '晚班';
+badge.innerHTML = `${selectedName}　班別：<span class="shift-badge ${isNight ? 'night' : 'morning'}">${isNight ? '🌙 晚班' : '☀️ 早班'}</span>`;
 
-            try {
-                const profile = await liff.getProfile();
-                const userId = profile.userId;
+// 如果 LIFF 已就緒，啟用打卡按鈕
+if (liffReady) {
+document.getElementById('btnIn').disabled = false;
+document.getElementById('btnOut').disabled = false;
+}
+}
 
-                // Wi-Fi 檢查
-                const ipRes = await fetch('https://api.ipify.org?format=json');
-                const ipData = await ipRes.json();
+function confirmNameInput() {
+const inputName = document.getElementById('nameInput').value.trim();
+if (!inputName) {
+alert('請輸入您的姓名');
+return;
+}
+document.getElementById('nameModal').classList.remove('show');
+applySelection(pendingBtn, `${pendingShiftLabel}(${inputName})`, pendingShift);
+pendingBtn = null;
+pendingShiftLabel = null;
+pendingShift = null;
+}
 
-                if (!ALLOWED_IPS.includes(ipData.ip)) {
-                    alert("❌ 打卡失敗：請先連接公司 Wi-Fi！\n目前 IP：" + ipData.ip);
-                    statusEl.textContent = "✅ 請選擇打卡人員";
-                    statusEl.className = 'ready';
-                    setActionButtons(true);
-                    return;
-                }
+function cancelNameInput() {
+document.getElementById('nameModal').classList.remove('show');
+pendingBtn = null;
+pendingShiftLabel = null;
+pendingShift = null;
+}
 
-                const res = await fetch(WEBHOOK_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        name: selectedName,
-                        action: actionType,
-                        shift: selectedShift,
-                        userId: userId
-                    })
-                });
+function setActionButtons(enabled) {
+document.getElementById('btnIn').disabled = !enabled || !selectedName;
+document.getElementById('btnOut').disabled = !enabled || !selectedName;
+}
 
-                if (res.ok) {
-                    statusEl.textContent = "✅ 打卡成功！";
-                    statusEl.className = 'ready';
-                    alert("👍 " + selectedName + " " + actionType + " 打卡成功！");
-                    liff.closeWindow();
-                } else {
-                    throw new Error("伺服器錯誤，狀態碼：" + res.status);
-                }
+// 初始化 LIFF
+liff.init({ liffId: LIFF_ID })
+.then(() => {
+if (!liff.isLoggedIn()) {
+liff.login();
+return;
+}
+liffReady = true;
+const statusEl = document.getElementById('status');
+statusEl.textContent = "✅ 請選擇打卡人員";
+statusEl.className = 'ready';
+})
+.catch((err) => {
+const statusEl = document.getElementById('status');
+statusEl.textContent = "❌ 初始化失敗：" + err.message;
+statusEl.className = 'error';
+});
 
-            } catch (err) {
-                alert("❌ 打卡失敗：" + err.message);
-                statusEl.textContent = "❌ 發生錯誤，請重試";
-                statusEl.className = 'error';
-                setActionButtons(true);
-            }
-        }
-    </script>
+async function submitCheck(actionType) {
+if (!selectedName) {
+alert("請先選擇打卡人員！");
+return;
+}
+
+const statusEl = document.getElementById('status');
+setActionButtons(false);
+statusEl.textContent = "⏳ 資料傳送中...";
+statusEl.className = '';
+statusEl.style.background = '#fff8e6';
+statusEl.style.color = '#e07b00';
+
+try {
+const profile = await liff.getProfile();
+const userId = profile.userId;
+
+// Wi-Fi 檢查
+const ipRes = await fetch('https://api.ipify.org?format=json');
+const ipData = await ipRes.json();
+
+if (!ALLOWED_IPS.includes(ipData.ip)) {
+alert("❌ 打卡失敗：請先連接公司 Wi-Fi！\n目前 IP：" + ipData.ip);
+statusEl.textContent = "✅ 請選擇打卡人員";
+statusEl.className = 'ready';
+setActionButtons(true);
+return;
+}
+
+const res = await fetch(WEBHOOK_URL, {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({
+name: selectedName,
+action: actionType,
+shift: selectedShift,
+userId: userId
+})
+});
+
+if (res.ok) {
+statusEl.textContent = "✅ 打卡成功！";
+statusEl.className = 'ready';
+alert("👍 " + selectedName + " " + actionType + " 打卡成功！");
+liff.closeWindow();
+} else {
+throw new Error("伺服器錯誤，狀態碼：" + res.status);
+}
+} catch (err) {
+alert("❌ 打卡失敗：" + err.message);
+statusEl.textContent = "❌ 發生錯誤，請重試";
+statusEl.className = 'error';
+setActionButtons(true);
+}
+}
+</script>
 </body>
 </html>
