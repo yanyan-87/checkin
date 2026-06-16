@@ -94,7 +94,8 @@ border-left: 4px solid #00B900;
 background: rgba(231, 76, 60, 0.08);
 border-left-color: #e74c3c;
 }
-.record-date { font-size: 13px; font-weight: 700; color: #333; margin-bottom: 6px; }
+.record-date { font-size: 13px; font-weight: 700; color: #333; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+.name-tag { font-size: 11px; font-weight: 700; background: #e8f0fe; color: #1a56a8; padding: 2px 8px; border-radius: 10px; }
 .record-row {
 display: flex; justify-content: space-between;
 font-size: 13px; color: #555; margin-top: 4px;
@@ -271,9 +272,12 @@ document.getElementById('resultList').innerHTML = records.map(d => {
 const hasIn = d['上班時間'] && d['上班時間'].trim() !== '';
 const hasOut = d['下班時間'] && d['下班時間'].trim() !== '';
 const isAbnormal = !hasIn || !hasOut;
+// 代班人名：從「代班晚班(陳小明)」取出「陳小明」；廖美真/王淑慧不顯示 tag
+const nameMatch = d.name && d.name.match(/\((.+)\)/);
+const displayName = nameMatch ? nameMatch[1] : '';
 return `
 <div class="record-card${isAbnormal ? ' abnormal' : ''}">
-<div class="record-date">📅 ${d.date}</div>
+<div class="record-date">📅 ${d.date}${displayName ? `<span class="name-tag">👤 ${displayName}</span>` : ''}</div>
 <div class="record-row">
 <span>🟢 上班</span>
 <span class="${hasIn ? 'record-time' : 'missing'}">${hasIn ? d['上班時間'] : '未打卡'}</span>
