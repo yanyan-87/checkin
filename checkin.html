@@ -358,13 +358,15 @@ statusEl.style.background = '#fff8e6';
 statusEl.style.color = '#e07b00';
 
 try {
-const profile = await liff.getProfile();
+// LINE profile 和 IP 查詢同時進行（平行），減少等待時間
+const [profile, ipRes] = await Promise.all([
+liff.getProfile(),
+fetch('https://api.ipify.org?format=json')
+]);
 const userId = profile.userId;
-
-// Wi-Fi 檢查
-const ipRes = await fetch('https://api.ipify.org?format=json');
 const ipData = await ipRes.json();
 
+// Wi-Fi 檢查
 if (!ALLOWED_IPS.includes(ipData.ip)) {
 alert("❌ 打卡失敗：請先連接公司 Wi-Fi！\n目前 IP：" + ipData.ip);
 statusEl.textContent = "✅ 請選擇打卡人員";
