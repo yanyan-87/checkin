@@ -114,8 +114,46 @@ margin-top: 16px;
 }
 #exportBtn:hover:not(:disabled) { background: #155232; }
 .hidden { display: none !important; }
+
+/* 跳至底部按鈕 */
+#scrollBottomBtn {
+position: fixed;
+right: 20px;
+bottom: 28px;
+width: 44px;
+height: 44px;
+background: #00B900;
+color: white;
+border: none;
+border-radius: 50%;
+font-size: 20px;
+cursor: pointer;
+box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+display: none;
+align-items: center;
+justify-content: center;
+z-index: 100;
+transition: background 0.18s;
+}
+#scrollBottomBtn:hover { background: #009900; }
+#scrollBottomBtn.show { display: flex; }
 </style>
-<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js">
+// 跳至底部按鈕顯示控制
+window.addEventListener('scroll', function() {
+  const btn = document.getElementById('scrollBottomBtn');
+  const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+  if (scrollable > 100 && window.scrollY < scrollable - 50) {
+    btn.classList.add('show');
+  } else {
+    btn.classList.remove('show');
+  }
+});
+
+function scrollToBottom() {
+  window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+}
+</script>
 </head>
 <body>
 
@@ -318,5 +356,8 @@ window.open(url, '_blank');
 }
 }
 </script>
+<!-- 跳至底部按鈕 -->
+<button id="scrollBottomBtn" onclick="scrollToBottom()" title="跳至底部">↓</button>
+
 </body>
 </html>
