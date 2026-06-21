@@ -138,22 +138,7 @@ transition: background 0.18s;
 #scrollBottomBtn:hover { background: #009900; }
 #scrollBottomBtn.show { display: flex; }
 </style>
-<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js">
-// 跳至底部按鈕顯示控制
-window.addEventListener('scroll', function() {
-  const btn = document.getElementById('scrollBottomBtn');
-  const scrollable = document.documentElement.scrollHeight - window.innerHeight;
-  if (scrollable > 100 && window.scrollY < scrollable - 50) {
-    btn.classList.add('show');
-  } else {
-    btn.classList.remove('show');
-  }
-});
-
-function scrollToBottom() {
-  window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
-}
-</script>
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
 
@@ -354,6 +339,21 @@ liff.openWindow({ url: url, external: true });
 // 萬一不在 LIFF 環境中，直接開新分頁
 window.open(url, '_blank');
 }
+}
+
+// 跳至底部按鈕顯示控制
+window.addEventListener('scroll', function() {
+  const btn = document.getElementById('scrollBottomBtn');
+  const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+  if (scrollable > 100 && window.scrollY < scrollable - 50) {
+    btn.classList.add('show');
+  } else {
+    btn.classList.remove('show');
+  }
+});
+
+function scrollToBottom() {
+  window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
 }
 </script>
 <!-- 跳至底部按鈕 -->
