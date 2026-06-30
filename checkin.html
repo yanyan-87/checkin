@@ -249,10 +249,10 @@ cursor: pointer;
 </div>
 </div>
 
-<scrt>
+<script>
 const LIFF_ID = "2010287664-sKwhY5g4";
 const WEBHOOK_URL = "https://yan-n8n.zeabur.app/webhook/line-checkin";
-const ALLOWED_IPS = [];
+const ALLOWED_IPS = ["210.63.216.41", "180.176.240.226", "123.193.216.3"];
 
 let selectedName = null;
 let selectedShift = null;
@@ -358,15 +358,12 @@ statusEl.style.background = '#fff8e6';
 statusEl.style.color = '#e07b00';
 
 try {
-// LINE profile 和 IP 查詢同時進行（平行），減少等待時間
-const [profile, ipRes] = await Promise.all([
-liff.getProfile(),
-fetch('https://api.ipify.org?format=json')
-]);
+const profile = await liff.getProfile();
 const userId = profile.userId;
-const ipData = await ipRes.json();
 
-// Wi-Fi 檢查
+/* === Wi-Fi 限制暫時關閉，如需恢復請取消下方註解 ===
+const ipRes = await fetch('https://api.ipify.org?format=json');
+const ipData = await ipRes.json();
 if (!ALLOWED_IPS.includes(ipData.ip)) {
 alert("❌ 打卡失敗：請先連接公司 Wi-Fi！\n目前 IP：" + ipData.ip);
 statusEl.textContent = "✅ 請選擇打卡人員";
@@ -374,6 +371,7 @@ statusEl.className = 'ready';
 setActionButtons(true);
 return;
 }
+=== Wi-Fi 限制區塊結束 === */
 
 const res = await fetch(WEBHOOK_URL, {
 method: 'POST',
