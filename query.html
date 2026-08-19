@@ -80,6 +80,63 @@ button:disabled { background: #ccc; color: #999; cursor: not-allowed; }
 .modal-btn.confirm { background: #1a56a8; color: #fff; }
 .modal-btn.confirm:hover { background: #154090; }
 
+/* 橫式報表 */
+.all-report-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 4px;
+}
+.all-report-table {
+  border-collapse: collapse;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.all-report-table th, .all-report-table td {
+  padding: 5px 8px;
+  border-bottom: 0.5px solid #e8e8e8;
+  text-align: center;
+}
+.all-report-table .col-date {
+  position: sticky;
+  left: 0;
+  background: #fff;
+  z-index: 2;
+  font-weight: 700;
+  text-align: left;
+  border-right: 2px solid #ddd;
+  min-width: 70px;
+}
+.all-report-table thead .col-date {
+  z-index: 3;
+  background: #fff;
+}
+.all-report-table .col-sep {
+  width: 6px;
+  background: #f0f2f5;
+  border: none;
+  padding: 0;
+}
+.all-report-table thead tr:first-child th {
+  padding: 6px 8px;
+  font-weight: 700;
+  font-size: 12px;
+}
+.all-report-table thead tr:last-child th {
+  font-size: 11px;
+  font-weight: 600;
+  color: #666;
+  background: #f8f9fa;
+}
+.all-report-table tbody tr:hover td { background: #f5f7ff; }
+.all-report-table tbody tr:hover td.col-date { background: #f5f7ff; }
+.all-report-table .cell-holiday { color: #f39c12; }
+.all-report-table .cell-late { color: #e74c3c; font-weight: 700; }
+.all-report-table .cell-early { color: #e67e22; font-weight: 700; }
+.all-report-table .cell-empty { color: #ccc; }
+.all-report-table .cell-note-late { color: #e74c3c; font-size: 11px; }
+.all-report-table .cell-note-early { color: #e67e22; font-size: 11px; }
+.all-report-table .cell-note-holiday { color: #f39c12; font-size: 11px; }
+
 /* 跳至底部按鈕 */
 #scrollBottomBtn { position: fixed; right: 20px; bottom: 28px; width: 44px; height: 44px; background: #00B900; color: white; border: none; border-radius: 50%; font-size: 20px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2); display: none; align-items: center; justify-content: center; z-index: 100; transition: background 0.18s; margin-top: 0; padding: 0; }
 #scrollBottomBtn:hover { background: #009900; }
@@ -417,13 +474,19 @@ async function queryAll(month) {
     summaryEl.textContent = `共 ${Object.keys(allData).length} 類人員 ／ 總計 ${totalCount} 筆記錄`;
     summaryEl.className = 'summary all';
 
-    // 渲染各人員分區
-    let html = '';
+    // 建立橫式報表
+    const [yr, mo] = month.split('-');
+    const daysInMonth = new Date(parseInt(yr), parseInt(mo), 0).getDate();
+    const dates = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+      dates.push(`${yr}-${mo}-${String(d).padStart(2,'0')}`);
+    }
+
+    // 整理所有人員欄位（正職 + 代班各自展開）
+    const columns = [];
     for (const name of ALL_NAMES) {
       const records = allData[name] || [];
-
       if (name.startsWith('代班')) {
-        // 代班：依不同的人展開獨立分組
         const subGroups = {};
         records.forEach(d => {
           const m = d.name && d.name.match(/\((.+)\)/);
@@ -431,31 +494,98 @@ async function queryAll(month) {
           if (!subGroups[subName]) subGroups[subName] = [];
           subGroups[subName].push(d);
         });
-
-        if (Object.keys(subGroups).length === 0) continue;
-
-        html += `<div class="person-section">
-          <div class="person-header">${name} <span class="person-count">${records.length} 筆</span></div>`;
-
         for (const [subName, subRecords] of Object.entries(subGroups)) {
-          html += `<div style="padding-left:8px; margin-bottom:10px;">
-            <div style="font-size:12px; font-weight:700; color:#1a56a8; margin-bottom:6px; padding:6px 10px; background:#e8f0fe; border-radius:8px;">👤 ${subName}（${subRecords.length} 筆）</div>`;
-          html += subRecords.map(renderCard).join('');
-          html += '</div>';
+          const byDate = {};
+          subRecords.forEach(r => { byDate[r.date] = r; });
+          columns.push({ label: `${name}\n(${subName})`, name: subName, isRegular: false, byDate, color: '#1a56a8', bg: '#e8f0fe' });
         }
-        html += '</div>';
-
       } else {
-        // 正職人員
-        if (records.length === 0) continue;
-        html += `<div class="person-section">
-          <div class="person-header">${name} <span class="person-count">${records.length} 筆</span></div>`;
-        html += records.map(renderCard).join('');
-        html += '</div>';
+        const byDate = {};
+        records.forEach(r => { byDate[r.date] = r; });
+        const color = name === '廖美真' ? '#1a8a36' : '#1a56a8';
+        const bg = name === '廖美真' ? '#e8f8ec' : '#e8f0fe';
+        columns.push({ label: name, name, isRegular: true, byDate, color, bg });
       }
     }
 
-    document.getElementById('resultList').innerHTML = html || '<div class="no-data">此月份無任何考勤記錄</div>';
+    if (columns.length === 0) {
+      document.getElementById('resultList').innerHTML = '<div class="no-data">此月份無任何考勤記錄</div>';
+      document.getElementById('exportAllBtn').classList.add('hidden');
+      document.getElementById('resultSection').style.display = 'block';
+      return;
+    }
+
+    // 渲染橫式表格
+    let html = '<div class="all-report-wrap"><table class="all-report-table">';
+
+    // 第一行：人名
+    html += '<thead><tr><th class="col-date" rowspan="2">日期</th>';
+    columns.forEach((col, i) => {
+      const displayLabel = col.label.replace('\n', '<br>');
+      html += `<th colspan="3" style="background:${col.bg}; color:${col.color};">${displayLabel}</th>`;
+      if (i < columns.length - 1) html += '<th class="col-sep" rowspan="2"></th>';
+    });
+    html += '</tr>';
+
+    // 第二行：欄位標題
+    html += '<tr>';
+    columns.forEach((col, i) => {
+      html += '<th>上班</th><th>下班</th><th>備註</th>';
+      if (i < columns.length - 1) html += '';
+    });
+    html += '</tr></thead>';
+
+    // 資料列（每天一列）
+    html += '<tbody>';
+    dates.forEach(date => {
+      const dow = ['日','一','二','三','四','五','六'][new Date(date).getDay()];
+      const isWeekend = new Date(date).getDay() === 0 || new Date(date).getDay() === 6;
+      const rowStyle = isWeekend ? 'background:#fafafa;' : '';
+      html += `<tr style="${rowStyle}"><td class="col-date">${date.slice(5)}（${dow}）</td>`;
+
+      columns.forEach((col, i) => {
+        const d = col.byDate[date];
+        const hasIn  = d && d['上班時間'] && d['上班時間'].trim();
+        const hasOut = d && d['下班時間'] && d['下班時間'].trim();
+        const noData = !d || (!hasIn && !hasOut);
+
+        if (noData && col.isRegular) {
+          // 正職無打卡 → 休假
+          html += '<td class="cell-holiday">休假</td><td class="cell-holiday">休假</td><td class="cell-note-holiday">休假</td>';
+        } else if (noData && !col.isRegular) {
+          // 代班無打卡 → 空格
+          html += '<td class="cell-empty">—</td><td class="cell-empty">—</td><td></td>';
+        } else {
+          // 有資料：判斷遲到/早退
+          const isNight = d && (d.shift === '晚班' || (d.name && d.name.includes('晚班')));
+          const inMin  = hasIn  ? parseInt(d['上班時間'].split(':')[0])*60 + parseInt(d['上班時間'].split(':')[1]) : null;
+          const outMin = hasOut ? parseInt(d['下班時間'].split(':')[0])*60 + parseInt(d['下班時間'].split(':')[1]) : null;
+          const late      = hasIn  && inMin  > (isNight ? 1125 : 405);
+          const earlyLeave = hasOut && outMin < (isNight ? 405  : 1125);
+
+          const inClass  = late ? 'cell-late' : '';
+          const outClass = earlyLeave ? 'cell-early' : '';
+          const inVal    = hasIn  ? d['上班時間'] : '<span class="cell-empty">—</span>';
+          const outVal   = hasOut ? d['下班時間'] : '<span class="cell-empty">—</span>';
+
+          const notes = [];
+          if (!hasIn && !hasOut) notes.push('未打卡');
+          else if (!hasIn) notes.push('未打上班卡');
+          else if (!hasOut) notes.push('未打下班卡');
+          if (late) notes.push('<span class="cell-note-late">遲到</span>');
+          if (earlyLeave) notes.push('<span class="cell-note-early">早退</span>');
+
+          html += `<td class="${inClass}">${inVal}</td><td class="${outClass}">${outVal}</td><td>${notes.join(' ')}</td>`;
+        }
+
+        if (i < columns.length - 1) html += '<td class="col-sep"></td>';
+      });
+
+      html += '</tr>';
+    });
+
+    html += '</tbody></table></div>';
+    document.getElementById('resultList').innerHTML = html;
     document.getElementById('exportBtn').classList.add('hidden');
     document.getElementById('exportAllBtn').classList.toggle('hidden', totalCount === 0);
     document.getElementById('resultSection').style.display = 'block';
