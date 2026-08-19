@@ -161,10 +161,6 @@ button:disabled { background: #ccc; color: #999; cursor: not-allowed; }
     <label>選擇人員</label>
     <select id="nameSelect" onchange="onNameChange()">
       <option value="">-- 請選擇 --</option>
-      <option value="廖美真">廖美真</option>
-      <option value="陳匯元">陳匯元</option>
-      <option value="代班早班">代班早班</option>
-      <option value="代班晚班">代班晚班</option>
       <option value="all" style="color:#1a56a8; font-weight:700;">★ 所有人員（需密碼）</option>
     </select>
   </div>
@@ -210,7 +206,7 @@ button:disabled { background: #ccc; color: #999; cursor: not-allowed; }
 const LIFF_ID = "2010287664-32ozNnEE";
 const N8N_QUERY_URL = "https://yan-n8n.zeabur.app/webhook/query-attendance";
 const N8N_EXPORT_URL = "https://yan-n8n.zeabur.app/webhook/export-attendance";
-const ALL_NAMES = ['廖美真', '陳匯元', '代班早班', '代班晚班'];
+let ALL_NAMES = []; // 動態從資料載入
 const PASSWORD = '0000';
 
 let currentRecords = [];
@@ -251,9 +247,12 @@ function checkPunctuality(d) {
   return { late, earlyLeave };
 }
 
-// 判斷是否正職（廖美真或陳匯元）
+// 判斷是否正職（name 不含括號且不是代班開頭）
 function isRegularStaff(name) {
-  return name === '廖美真' || name === '陳匯元';
+  if (!name) return false;
+  if (name.includes('(') || name.includes('（')) return false;
+  if (name.startsWith('代班')) return false;
+  return true;
 }
 
 // 渲染單筆記錄卡片
@@ -349,10 +348,33 @@ async function onNameChange() {
 
   showLoading('載入月份資料中...');
   try {
-    // all 模式用廖美真的資料撈月份作為基準
-    const queryName = name === 'all' ? '廖美真' : name;
-    const res = await fetch(`${N8N_QUERY_URL}?name=${encodeURIComponent(queryName)}&month=all`);
+    // 撈全部資料（month=all, name不篩選）以取得所有月份和人名
+    const res = await fetch(`${N8N_QUERY_URL}?name=&month=all`);
     const data = JSON.parse(await res.text());
+
+    // 動態整理所有不重複人名（依班別排序：正職優先，代班依括號內名字）
+    const nameSet = new Set();
+    data.filter(r => r.name).forEach(r => nameSet.add(r.name));
+    const allNames = [...nameSet].sort((a, b) => {
+      const aIsSubst = a.startsWith('代班');
+      const bIsSubst = b.startsWith('代班');
+      if (aIsSubst !== bIsSubst) return aIsSubst ? 1 : -1;
+      return a.localeCompare(b, 'zh-TW');
+    });
+    ALL_NAMES = allNames;
+
+    // 更新下拉選單（保留 all 選項，動態加入實際人名）
+    const currentSelect = document.getElementById('nameSelect');
+    const currentVal = currentSelect.value;
+    currentSelect.innerHTML = `
+      <option value="">-- 請選擇 --</option>
+      <option value="all" style="color:#1a56a8; font-weight:700;">★ 所有人員（需密碼）</option>
+      ${allNames.map(n => `<option value="${n}" ${n === currentVal ? 'selected' : ''}>${n}</option>`).join('')}
+    `;
+    // 維持目前選取值
+    currentSelect.value = name;
+
+    // 整理月份
     const months = [...new Set(data.filter(r => r.date).map(r => r.date.substring(0, 7)))].sort().reverse();
     hideLoading();
     if (months.length === 0) {
@@ -449,15 +471,23 @@ async function queryAll(month) {
   document.getElementById('queryBtn').disabled = true;
 
   try {
-    // 平行撈取所有人員資料
-    const results = await Promise.all(
-      ALL_NAMES.map(n => fetch(`${N8N_QUERY_URL}?name=${encodeURIComponent(n)}&month=${month}`)
-        .then(r => r.text()).then(t => JSON.parse(t)).catch(() => []))
-    );
+    // 一次撈全部資料，前端依人名分組
+    const res = await fetch(`${N8N_QUERY_URL}?name=&month=${month}`);
+    const rawData = JSON.parse(await res.text());
+
+    // 取得所有不重複人名（依正職/代班排序）
+    const nameSet = new Set();
+    rawData.filter(r => r.name && r.date).forEach(r => nameSet.add(r.name));
+    const dynNames = [...nameSet].sort((a, b) => {
+      const aS = a.startsWith('代班'), bS = b.startsWith('代班');
+      if (aS !== bS) return aS ? 1 : -1;
+      return a.localeCompare(b, 'zh-TW');
+    });
+    ALL_NAMES = dynNames;
 
     allData = {};
-    ALL_NAMES.forEach((n, i) => {
-      allData[n] = results[i].filter(r => r.date);
+    dynNames.forEach(n => {
+      allData[n] = rawData.filter(r => r.date && r.name === n);
     });
 
     currentMonth = month;
@@ -482,30 +512,26 @@ async function queryAll(month) {
       dates.push(`${yr}-${mo}-${String(d).padStart(2,'0')}`);
     }
 
-    // 整理所有人員欄位（正職 + 代班各自展開）
+    // 每個人名完全獨立一欄
     const columns = [];
     for (const name of ALL_NAMES) {
       const records = allData[name] || [];
-      if (name.startsWith('代班')) {
-        const subGroups = {};
-        records.forEach(d => {
-          const m = d.name && d.name.match(/\((.+)\)/);
-          const subName = m ? m[1] : '未知';
-          if (!subGroups[subName]) subGroups[subName] = [];
-          subGroups[subName].push(d);
-        });
-        for (const [subName, subRecords] of Object.entries(subGroups)) {
-          const byDate = {};
-          subRecords.forEach(r => { byDate[r.date] = r; });
-          columns.push({ label: `${name}\n(${subName})`, name: subName, isRegular: false, byDate, color: '#1a56a8', bg: '#e8f0fe' });
-        }
+      const byDate = {};
+      records.forEach(r => { byDate[r.date] = r; });
+      const regular = isRegularStaff(name);
+      // 顏色：正職早班綠、正職晚班藍、代班橘
+      let color = '#1a56a8', bg = '#e8f0fe';
+      if (regular) {
+        const shift = records[0]?.shift || '';
+        color = shift === '早班' ? '#1a8a36' : '#1a56a8';
+        bg    = shift === '早班' ? '#e8f8ec' : '#e8f0fe';
       } else {
-        const byDate = {};
-        records.forEach(r => { byDate[r.date] = r; });
-        const color = name === '廖美真' ? '#1a8a36' : '#1a56a8';
-        const bg = name === '廖美真' ? '#e8f8ec' : '#e8f0fe';
-        columns.push({ label: name, name, isRegular: true, byDate, color, bg });
+        color = '#a05c00'; bg = '#fff3cd';
       }
+      // 代班顯示括號內人名
+      const m = name.match(/\((.+)\)/);
+      const label = m ? `${name.split('(')[0]}\n(${m[1]})` : name;
+      columns.push({ label, name, isRegular: regular, byDate, color, bg });
     }
 
     if (columns.length === 0) {
