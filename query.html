@@ -6,135 +6,82 @@
 <title>考勤查詢</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body {
-font-family: 'Helvetica Neue', Arial, sans-serif;
-background: #f0f2f5;
-min-height: 100vh;
-padding: 20px;
-}
-.card {
-background: #ffffff;
-border-radius: 20px;
-padding: 28px 24px;
-width: 100%;
-max-width: 480px;
-margin: 0 auto;
-box-shadow: 0 4px 24px rgba(0,0,0,0.10);
-}
+body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #f0f2f5; min-height: 100vh; padding: 20px; }
+.card { background: #fff; border-radius: 20px; padding: 28px 24px; width: 100%; max-width: 480px; margin: 0 auto; box-shadow: 0 4px 24px rgba(0,0,0,0.10); }
 .logo { text-align: center; font-size: 32px; margin-bottom: 6px; }
-h2 {
-text-align: center; font-size: 20px; color: #1a1a1a;
-margin-bottom: 4px; font-weight: 700;
-}
+h2 { text-align: center; font-size: 20px; color: #1a1a1a; margin-bottom: 4px; font-weight: 700; }
 .subtitle { text-align: center; font-size: 13px; color: #888; margin-bottom: 24px; }
-#status {
-text-align: center; font-size: 14px; font-weight: 600;
-padding: 10px 16px; border-radius: 10px; margin-bottom: 20px;
-background: #fff8e6; color: #e07b00;
-}
+#status { text-align: center; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 10px; margin-bottom: 20px; background: #fff8e6; color: #e07b00; }
 #status.ready { background: #e8f8ec; color: #1a8a36; }
 #status.error { background: #fdecea; color: #c0392b; }
-#status.loading { background: #e8f0fe; color: #1a56a8; }
 .form-group { margin-bottom: 16px; }
 label { display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 8px; }
-select {
-width: 100%; padding: 12px 16px; font-size: 16px;
-border: 2px solid #e8e8e8; border-radius: 12px;
-background: #fafafa; color: #1a1a1a; appearance: none;
-background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-background-repeat: no-repeat; background-position: right 16px center; cursor: pointer;
-}
+select { width: 100%; padding: 12px 16px; font-size: 16px; border: 2px solid #e8e8e8; border-radius: 12px; background: #fafafa; color: #1a1a1a; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; cursor: pointer; }
 select:focus { outline: none; border-color: #00B900; }
-button {
-width: 100%; padding: 14px; font-size: 16px; font-weight: 700;
-border: none; border-radius: 14px; cursor: pointer;
-background: #00B900; color: white; margin-top: 8px; transition: all 0.18s;
-}
+button { width: 100%; padding: 14px; font-size: 16px; font-weight: 700; border: none; border-radius: 14px; cursor: pointer; background: #00B900; color: white; margin-top: 8px; transition: all 0.18s; }
 button:hover:not(:disabled) { background: #009900; }
-button:disabled { background: #cccccc; color: #999; cursor: not-allowed; }
+button:disabled { background: #ccc; color: #999; cursor: not-allowed; }
 
-/* Loading overlay */
-#loadingOverlay {
-display: none;
-position: fixed;
-top: 0; left: 0; right: 0; bottom: 0;
-background: rgba(255,255,255,0.85);
-z-index: 999;
-flex-direction: column;
-align-items: center;
-justify-content: center;
-gap: 16px;
-}
+/* Loading */
+#loadingOverlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.85); z-index: 999; flex-direction: column; align-items: center; justify-content: center; gap: 16px; }
 #loadingOverlay.show { display: flex; }
-.spinner {
-width: 44px; height: 44px;
-border: 4px solid #e0e0e0;
-border-top-color: #00B900;
-border-radius: 50%;
-animation: spin 0.8s linear infinite;
-}
+.spinner { width: 44px; height: 44px; border: 4px solid #e0e0e0; border-top-color: #00B900; border-radius: 50%; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .loading-text { font-size: 15px; font-weight: 600; color: #333; }
 
 /* 結果區域 */
 #resultSection { display: none; margin-top: 24px; }
-.result-header {
-font-size: 14px; font-weight: 700; color: #333;
-margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #e8e8e8;
-}
-.record-card {
-background: #f8f9fa;
-border-radius: 12px;
-padding: 14px 16px;
-margin-bottom: 10px;
-border-left: 4px solid #00B900;
-}
-/* 打卡異常：整片淺紅色背景 */
-.record-card.abnormal {
-background: rgba(231, 76, 60, 0.08);
-border-left-color: #e74c3c;
-}
-.record-date { font-size: 13px; font-weight: 700; color: #333; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
-.name-tag { font-size: 11px; font-weight: 700; background: #e8f0fe; color: #1a56a8; padding: 2px 8px; border-radius: 10px; }
-.record-row {
-display: flex; justify-content: space-between;
-font-size: 13px; color: #555; margin-top: 4px;
-}
+.result-header { font-size: 14px; font-weight: 700; color: #333; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #e8e8e8; }
+.summary { background: #e8f8ec; border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; font-size: 13px; color: #1a8a36; font-weight: 600; text-align: center; }
+.summary.all { background: #e8f0fe; color: #1a56a8; }
+
+/* 記錄卡片 */
+.record-card { background: #f8f9fa; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; border-left: 4px solid #00B900; }
+.record-card.abnormal { background: rgba(231,76,60,0.08); border-left-color: #e74c3c; }
+.record-card.holiday { background: rgba(255,193,7,0.08); border-left-color: #f39c12; }
+.record-date { font-size: 13px; font-weight: 700; color: #333; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.record-row { display: flex; justify-content: space-between; font-size: 13px; color: #555; margin-top: 4px; align-items: center; }
 .record-time { font-weight: 600; color: #1a1a1a; }
 .missing { color: #e74c3c; font-style: italic; }
+.holiday-text { color: #f39c12; font-style: italic; }
 .no-data { text-align: center; color: #999; font-size: 14px; padding: 20px; }
-.summary {
-background: #e8f8ec; border-radius: 12px; padding: 12px 16px;
-margin-bottom: 16px; font-size: 13px; color: #1a8a36;
-font-weight: 600; text-align: center;
-}
-#exportBtn {
-background: #1d6f42;
-margin-top: 16px;
-}
+
+/* 標籤 */
+.name-tag { font-size: 11px; font-weight: 700; background: #e8f0fe; color: #1a56a8; padding: 2px 8px; border-radius: 10px; }
+.late-tag { font-size: 11px; font-weight: 700; background: #fdecea; color: #c0392b; padding: 2px 7px; border-radius: 10px; }
+.early-tag { font-size: 11px; font-weight: 700; background: #fff3cd; color: #856404; padding: 2px 7px; border-radius: 10px; }
+.holiday-tag { font-size: 11px; font-weight: 700; background: #fff3cd; color: #856404; padding: 2px 7px; border-radius: 10px; }
+
+/* 人員分組標題（所有人員模式） */
+.person-section { margin-bottom: 20px; }
+.person-header { font-size: 15px; font-weight: 700; color: #1a1a1a; padding: 10px 14px; background: #f0f2f5; border-radius: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+.person-header .person-count { font-size: 12px; font-weight: 600; color: #888; }
+
+/* 按鈕 */
+#exportBtn { background: #1d6f42; margin-top: 16px; }
 #exportBtn:hover:not(:disabled) { background: #155232; }
+#exportAllBtn { background: #1a56a8; margin-top: 8px; }
+#exportAllBtn:hover:not(:disabled) { background: #154090; }
 .hidden { display: none !important; }
 
+/* 密碼彈窗 */
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.45); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+.modal-overlay.show { display: flex; }
+.modal-box { background: #fff; border-radius: 16px; padding: 24px 20px; width: 100%; max-width: 300px; box-shadow: 0 8px 30px rgba(0,0,0,0.2); }
+.modal-title { font-size: 16px; font-weight: 700; color: #1a1a1a; margin-bottom: 6px; text-align: center; }
+.modal-sub { font-size: 13px; color: #888; text-align: center; margin-bottom: 16px; }
+.modal-input { width: 100%; padding: 14px; font-size: 22px; letter-spacing: 10px; border: 2px solid #e8e8e8; border-radius: 10px; margin-bottom: 8px; text-align: center; outline: none; }
+.modal-input:focus { border-color: #1a56a8; }
+.modal-error { color: #e74c3c; font-size: 12px; text-align: center; margin-bottom: 10px; min-height: 18px; }
+.modal-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.modal-btn { padding: 12px 8px; font-size: 15px; font-weight: 700; border: none; border-radius: 10px; cursor: pointer; width: 100%; margin-top: 0; }
+.modal-btn.cancel { background: #f0f0f0; color: #666; }
+.modal-btn.cancel:hover { background: #e0e0e0; }
+.modal-btn.confirm { background: #1a56a8; color: #fff; }
+.modal-btn.confirm:hover { background: #154090; }
+
 /* 跳至底部按鈕 */
-#scrollBottomBtn {
-position: fixed;
-right: 20px;
-bottom: 28px;
-width: 44px;
-height: 44px;
-background: #00B900;
-color: white;
-border: none;
-border-radius: 50%;
-font-size: 20px;
-cursor: pointer;
-box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-display: none;
-align-items: center;
-justify-content: center;
-z-index: 100;
-transition: background 0.18s;
-}
+#scrollBottomBtn { position: fixed; right: 20px; bottom: 28px; width: 44px; height: 44px; background: #00B900; color: white; border: none; border-radius: 50%; font-size: 20px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2); display: none; align-items: center; justify-content: center; z-index: 100; transition: background 0.18s; margin-top: 0; padding: 0; }
 #scrollBottomBtn:hover { background: #009900; }
 #scrollBottomBtn.show { display: flex; }
 </style>
@@ -142,206 +89,397 @@ transition: background 0.18s;
 </head>
 <body>
 
-<!-- Loading Overlay -->
 <div id="loadingOverlay">
-<div class="spinner"></div>
-<div class="loading-text" id="loadingText">資料載入中...</div>
+  <div class="spinner"></div>
+  <div class="loading-text" id="loadingText">資料載入中...</div>
 </div>
 
 <div class="card">
-<div class="logo">📋</div>
-<h2>考勤查詢</h2>
-<p class="subtitle">財盛南港經貿</p>
+  <div class="logo">📋</div>
+  <h2>考勤查詢</h2>
+  <p class="subtitle">財盛南港經貿</p>
+  <div id="status">⏳ 正在連線 LINE 系統，請稍候...</div>
 
-<div id="status">⏳ 正在連線 LINE 系統，請稍候...</div>
+  <div class="form-group">
+    <label>選擇人員</label>
+    <select id="nameSelect" onchange="onNameChange()">
+      <option value="">-- 請選擇 --</option>
+      <option value="廖美真">廖美真</option>
+      <option value="陳匯元">陳匯元</option>
+      <option value="代班早班">代班早班</option>
+      <option value="代班晚班">代班晚班</option>
+      <option value="all" style="color:#1a56a8; font-weight:700;">★ 所有人員（需密碼）</option>
+    </select>
+  </div>
 
-<div class="form-group">
-<label>選擇人員</label>
-<select id="nameSelect" onchange="onNameChange()">
-<option value="">-- 請選擇 --</option>
-<option value="廖美真">廖美真</option>
-<option value="王淑慧">王淑慧</option>
-<option value="代班早班">代班早班</option>
-<option value="代班晚班">代班晚班</option>
-</select>
+  <div class="form-group" id="monthGroup" style="display:none">
+    <label>選擇月份</label>
+    <select id="monthSelect">
+      <option value="">-- 載入中 --</option>
+    </select>
+  </div>
+
+  <button id="queryBtn" onclick="queryAttendance()" disabled>查詢考勤</button>
+
+  <div id="resultSection">
+    <div class="result-header" id="resultHeader"></div>
+    <div class="summary" id="resultSummary"></div>
+    <div id="resultList"></div>
+    <button id="exportBtn" onclick="exportExcel()" class="hidden">📥 匯出 Excel</button>
+    <button id="exportAllBtn" onclick="exportAll()" class="hidden">📥 一鍵匯出所有人員考勤</button>
+  </div>
 </div>
 
-<div class="form-group" id="monthGroup" style="display:none">
-<label>選擇月份</label>
-<select id="monthSelect">
-<option value="">-- 載入中 --</option>
-</select>
+<!-- 密碼彈窗 -->
+<div class="modal-overlay" id="pwModal">
+  <div class="modal-box">
+    <div class="modal-title">🔒 請輸入密碼</div>
+    <div class="modal-sub">輸出所有人員考勤需驗證</div>
+    <input type="password" id="pwInput" class="modal-input" maxlength="4" placeholder="••••"
+           oninput="document.getElementById('pwError').textContent=''"
+           onkeypress="if(event.key==='Enter'){confirmPassword();}">
+    <div class="modal-error" id="pwError"></div>
+    <div class="modal-buttons">
+      <button class="modal-btn cancel" onclick="cancelPassword()">取消</button>
+      <button class="modal-btn confirm" onclick="confirmPassword()">確認</button>
+    </div>
+  </div>
 </div>
 
-<button id="queryBtn" onclick="queryAttendance()" disabled>查詢考勤</button>
-
-<div id="resultSection">
-<div class="result-header" id="resultHeader"></div>
-<div class="summary" id="resultSummary"></div>
-<div id="resultList"></div>
-<button id="exportBtn" onclick="exportExcel()" class="hidden">📥 匯出 Excel</button>
-</div>
-</div>
+<!-- 跳至底部按鈕 -->
+<button id="scrollBottomBtn" onclick="scrollToBottom()" title="跳至底部">↓</button>
 
 <script>
 const LIFF_ID = "2010287664-32ozNnEE";
 const N8N_QUERY_URL = "https://yan-n8n.zeabur.app/webhook/query-attendance";
 const N8N_EXPORT_URL = "https://yan-n8n.zeabur.app/webhook/export-attendance";
-
-function showLoading(text) {
-document.getElementById('loadingText').textContent = text || '資料載入中...';
-document.getElementById('loadingOverlay').classList.add('show');
-}
-
-function hideLoading() {
-document.getElementById('loadingOverlay').classList.remove('show');
-}
-
-// 初始化 LIFF
-liff.init({ liffId: LIFF_ID })
-.then(() => {
-if (!liff.isLoggedIn()) { liff.login(); return; }
-const statusEl = document.getElementById('status');
-statusEl.textContent = "✅ 系統準備就緒，請選擇人員";
-statusEl.className = 'ready';
-})
-.catch((err) => {
-const statusEl = document.getElementById('status');
-statusEl.textContent = "❌ 初始化失敗：" + err.message;
-statusEl.className = 'error';
-});
-
-async function onNameChange() {
-const name = document.getElementById('nameSelect').value;
-const monthGroup = document.getElementById('monthGroup');
-const monthSelect = document.getElementById('monthSelect');
-const queryBtn = document.getElementById('queryBtn');
-
-document.getElementById('resultSection').style.display = 'none';
-queryBtn.disabled = true;
-
-if (!name) { monthGroup.style.display = 'none'; return; }
-
-monthGroup.style.display = 'block';
-monthSelect.innerHTML = '<option value="">-- 載入中 --</option>';
-monthSelect.style.display = 'block';
-
-showLoading('載入月份資料中...');
-
-try {
-const res = await fetch(`${N8N_QUERY_URL}?name=${encodeURIComponent(name)}&month=all`);
-const text = await res.text();
-const data = JSON.parse(text);
-
-const months = [...new Set(
-data.filter(r => r.date).map(r => r.date.substring(0, 7))
-)].sort().reverse();
-
-hideLoading();
-
-if (months.length === 0) {
-monthSelect.innerHTML = '<option value="">-- 無資料 --</option>';
-return;
-}
-
-monthSelect.innerHTML = months.map((m, i) => {
-const [year, month] = m.split('-');
-return `<option value="${m}" ${i === 0 ? 'selected' : ''}>${year}年${parseInt(month)}月</option>`;
-}).join('');
-
-queryBtn.disabled = false;
-} catch (err) {
-hideLoading();
-monthSelect.innerHTML = '<option value="">-- 載入失敗 --</option>';
-alert('載入月份失敗：' + err.message);
-}
-}
-
-async function queryAttendance() {
-const name = document.getElementById('nameSelect').value;
-const month = document.getElementById('monthSelect').value;
-if (!name || !month) return;
-
-showLoading('查詢考勤記錄中...');
-document.getElementById('resultSection').style.display = 'none';
-document.getElementById('queryBtn').disabled = true;
-
-try {
-const res = await fetch(`${N8N_QUERY_URL}?name=${encodeURIComponent(name)}&month=${month}`);
-const text = await res.text();
-const data = JSON.parse(text);
-const records = data.filter(r => r.date);
-
-currentRecords = records;
-currentName = name;
-currentMonth = month;
-
-hideLoading();
-document.getElementById('queryBtn').disabled = false;
-
-const [year, mon] = month.split('-');
-document.getElementById('resultHeader').textContent =
-`${name}｜${year}年${parseInt(mon)}月 共 ${records.length} 筆`;
-
-const completeCount = records.filter(r => r['上班時間'] && r['下班時間']).length;
-document.getElementById('resultSummary').textContent =
-`完整打卡 ${completeCount} 天 ／ 總計 ${records.length} 筆記錄`;
-
-if (records.length === 0) {
-document.getElementById('resultList').innerHTML = '<div class="no-data">此月份無考勤記錄</div>';
-document.getElementById('exportBtn').classList.add('hidden');
-} else {
-document.getElementById('resultList').innerHTML = records.map(d => {
-const hasIn = d['上班時間'] && d['上班時間'].trim() !== '';
-const hasOut = d['下班時間'] && d['下班時間'].trim() !== '';
-const isAbnormal = !hasIn || !hasOut;
-// 代班人名：從「代班晚班(陳小明)」取出「陳小明」；廖美真/王淑慧不顯示 tag
-const nameMatch = d.name && d.name.match(/\((.+)\)/);
-const displayName = nameMatch ? nameMatch[1] : '';
-return `
-<div class="record-card${isAbnormal ? ' abnormal' : ''}">
-<div class="record-date">📅 ${d.date}${displayName ? `<span class="name-tag">👤 ${displayName}</span>` : ''}</div>
-<div class="record-row">
-<span>🟢 上班</span>
-<span class="${hasIn ? 'record-time' : 'missing'}">${hasIn ? d['上班時間'] : '未打卡'}</span>
-</div>
-<div class="record-row">
-<span>🔴 下班</span>
-<span class="${hasOut ? 'record-time' : 'missing'}">${hasOut ? d['下班時間'] : '未打卡'}</span>
-</div>
-</div>
-`;
-}).join('');
-document.getElementById('exportBtn').classList.remove('hidden');
-}
-
-document.getElementById('resultSection').style.display = 'block';
-} catch (err) {
-hideLoading();
-document.getElementById('queryBtn').disabled = false;
-alert('查詢失敗：' + err.message);
-}
-}
+const ALL_NAMES = ['廖美真', '陳匯元', '代班早班', '代班晚班'];
+const PASSWORD = '0000';
 
 let currentRecords = [];
 let currentName = '';
 let currentMonth = '';
+let allData = {};
+let passwordVerified = false;
 
+function showLoading(text) {
+  document.getElementById('loadingText').textContent = text || '資料載入中...';
+  document.getElementById('loadingOverlay').classList.add('show');
+}
+function hideLoading() {
+  document.getElementById('loadingOverlay').classList.remove('show');
+}
+
+// 時間字串轉分鐘數
+function timeToMin(t) {
+  if (!t || !t.trim()) return null;
+  const parts = t.trim().split(':');
+  if (parts.length < 2) return null;
+  return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+}
+
+// 判斷遲到/早退
+function checkPunctuality(d) {
+  const isNight = (d.shift === '晚班') || (d.name && d.name.includes('晚班'));
+  const inMin  = timeToMin(d['上班時間']);
+  const outMin = timeToMin(d['下班時間']);
+  let late = false, earlyLeave = false;
+  if (isNight) {
+    if (inMin  !== null && inMin  > 1125) late = true;
+    if (outMin !== null && outMin < 405)  earlyLeave = true;
+  } else {
+    if (inMin  !== null && inMin  > 405)  late = true;
+    if (outMin !== null && outMin < 1125) earlyLeave = true;
+  }
+  return { late, earlyLeave };
+}
+
+// 判斷是否正職（廖美真或陳匯元）
+function isRegularStaff(name) {
+  return name === '廖美真' || name === '陳匯元';
+}
+
+// 渲染單筆記錄卡片
+function renderCard(d) {
+  const hasIn  = d['上班時間'] && d['上班時間'].trim() !== '';
+  const hasOut = d['下班時間'] && d['下班時間'].trim() !== '';
+  const noData = !hasIn && !hasOut;
+  const isRegular = isRegularStaff(d.name);
+
+  // 正職沒打卡 → 休假；代班沒打卡 → 空白
+  const isHoliday = noData && isRegular;
+  const isEmpty   = noData && !isRegular;
+
+  // 若代班完全沒資料就不顯示（空白）
+  if (isEmpty) return '';
+
+  const { late, earlyLeave } = checkPunctuality(d);
+  const nameMatch = d.name && d.name.match(/\((.+)\)/);
+  const displayName = nameMatch ? nameMatch[1] : '';
+
+  let cardClass = 'record-card';
+  if (isHoliday) cardClass += ' holiday';
+  else if (!hasIn || !hasOut) cardClass += ' abnormal';
+
+  let inDisplay, outDisplay;
+  if (isHoliday) {
+    inDisplay  = '<span class="holiday-text">休假</span>';
+    outDisplay = '<span class="holiday-text">休假</span>';
+  } else {
+    inDisplay  = hasIn  ? `<span class="record-time">${d['上班時間']}</span>` : '<span class="missing">未打卡</span>';
+    outDisplay = hasOut ? `<span class="record-time">${d['下班時間']}</span>` : '<span class="missing">未打卡</span>';
+  }
+
+  return `
+<div class="${cardClass}">
+  <div class="record-date">
+    📅 ${d.date}
+    ${displayName ? `<span class="name-tag">👤 ${displayName}</span>` : ''}
+    ${isHoliday ? '<span class="holiday-tag">🏖️ 休假</span>' : ''}
+    ${!isHoliday && hasIn && late ? '<span class="late-tag">⚠️ 遲到</span>' : ''}
+    ${!isHoliday && hasOut && earlyLeave ? '<span class="early-tag">⏰ 早退</span>' : ''}
+  </div>
+  <div class="record-row">
+    <span>🟢 上班</span>${inDisplay}
+  </div>
+  <div class="record-row">
+    <span>🔴 下班</span>${outDisplay}
+  </div>
+</div>`;
+}
+
+// LIFF 初始化
+liff.init({ liffId: LIFF_ID })
+.then(() => {
+  if (!liff.isLoggedIn()) { liff.login(); return; }
+  const statusEl = document.getElementById('status');
+  statusEl.textContent = '✅ 系統準備就緒，請選擇人員';
+  statusEl.className = 'ready';
+})
+.catch((err) => {
+  const statusEl = document.getElementById('status');
+  statusEl.textContent = '❌ 初始化失敗：' + err.message;
+  statusEl.className = 'error';
+});
+
+
+
+async function onNameChange() {
+  const name = document.getElementById('nameSelect').value;
+  document.getElementById('resultSection').style.display = 'none';
+  document.getElementById('queryBtn').disabled = true;
+
+  if (!name) {
+    document.getElementById('monthGroup').style.display = 'none';
+    return;
+  }
+
+  if (name === 'all') {
+    if (!passwordVerified) {
+      document.getElementById('pwInput').value = '';
+      document.getElementById('pwError').textContent = '';
+      document.getElementById('pwModal').classList.add('show');
+      setTimeout(() => document.getElementById('pwInput').focus(), 100);
+      return;
+    }
+  }
+
+  // 載入月份
+  const monthGroup = document.getElementById('monthGroup');
+  const monthSelect = document.getElementById('monthSelect');
+  monthGroup.style.display = 'block';
+  monthSelect.innerHTML = '<option value="">-- 載入中 --</option>';
+
+  showLoading('載入月份資料中...');
+  try {
+    // all 模式用廖美真的資料撈月份作為基準
+    const queryName = name === 'all' ? '廖美真' : name;
+    const res = await fetch(`${N8N_QUERY_URL}?name=${encodeURIComponent(queryName)}&month=all`);
+    const data = JSON.parse(await res.text());
+    const months = [...new Set(data.filter(r => r.date).map(r => r.date.substring(0, 7)))].sort().reverse();
+    hideLoading();
+    if (months.length === 0) {
+      monthSelect.innerHTML = '<option value="">-- 無資料 --</option>';
+      return;
+    }
+    monthSelect.innerHTML = months.map((m, i) => {
+      const [y, mo] = m.split('-');
+      return `<option value="${m}" ${i === 0 ? 'selected' : ''}>${y}年${parseInt(mo)}月</option>`;
+    }).join('');
+    document.getElementById('queryBtn').disabled = false;
+  } catch(e) {
+    hideLoading();
+    monthSelect.innerHTML = '<option value="">-- 載入失敗 --</option>';
+    alert('載入月份失敗：' + e.message);
+  }
+}
+
+function confirmPassword() {
+  const pw = document.getElementById('pwInput').value;
+  if (pw === PASSWORD) {
+    passwordVerified = true;
+    document.getElementById('pwModal').classList.remove('show');
+    onNameChange(); // 觸發月份載入
+  } else {
+    document.getElementById('pwError').textContent = '密碼錯誤，請重試';
+    document.getElementById('pwInput').value = '';
+    document.getElementById('pwInput').focus();
+  }
+}
+
+function cancelPassword() {
+  document.getElementById('pwModal').classList.remove('show');
+  document.getElementById('nameSelect').value = '';
+  document.getElementById('queryBtn').disabled = true;
+}
+
+async function queryAttendance() {
+  const name  = document.getElementById('nameSelect').value;
+  const month = document.getElementById('monthSelect').value;
+  if (!name || !month) return;
+
+  if (name === 'all') {
+    await queryAll(month);
+  } else {
+    await querySingle(name, month);
+  }
+}
+
+// 查詢單人
+async function querySingle(name, month) {
+  showLoading('查詢考勤記錄中...');
+  document.getElementById('resultSection').style.display = 'none';
+  document.getElementById('queryBtn').disabled = true;
+
+  try {
+    const res = await fetch(`${N8N_QUERY_URL}?name=${encodeURIComponent(name)}&month=${month}`);
+    const data = JSON.parse(await res.text());
+    const records = data.filter(r => r.date);
+
+    currentRecords = records;
+    currentName = name;
+    currentMonth = month;
+
+    hideLoading();
+    document.getElementById('queryBtn').disabled = false;
+
+    const [year, mon] = month.split('-');
+    document.getElementById('resultHeader').textContent = `${name}｜${year}年${parseInt(mon)}月 共 ${records.length} 筆`;
+
+    const completeCount = records.filter(r => r['上班時間'] && r['下班時間']).length;
+    const summaryEl = document.getElementById('resultSummary');
+    summaryEl.textContent = `完整打卡 ${completeCount} 天 ／ 總計 ${records.length} 筆記錄`;
+    summaryEl.className = 'summary';
+
+    document.getElementById('resultList').innerHTML = records.length === 0
+      ? '<div class="no-data">此月份無考勤記錄</div>'
+      : records.map(renderCard).join('');
+
+    document.getElementById('exportBtn').classList.toggle('hidden', records.length === 0);
+    document.getElementById('exportAllBtn').classList.add('hidden');
+    document.getElementById('resultSection').style.display = 'block';
+  } catch (err) {
+    hideLoading();
+    document.getElementById('queryBtn').disabled = false;
+    alert('查詢失敗：' + err.message);
+  }
+}
+
+// 查詢所有人員
+async function queryAll(month) {
+  showLoading('載入所有人員考勤中...');
+  document.getElementById('resultSection').style.display = 'none';
+  document.getElementById('queryBtn').disabled = true;
+
+  try {
+    // 平行撈取所有人員資料
+    const results = await Promise.all(
+      ALL_NAMES.map(n => fetch(`${N8N_QUERY_URL}?name=${encodeURIComponent(n)}&month=${month}`)
+        .then(r => r.text()).then(t => JSON.parse(t)).catch(() => []))
+    );
+
+    allData = {};
+    ALL_NAMES.forEach((n, i) => {
+      allData[n] = results[i].filter(r => r.date);
+    });
+
+    currentMonth = month;
+    currentName = 'all';
+
+    hideLoading();
+    document.getElementById('queryBtn').disabled = false;
+
+    const [year, mon] = month.split('-');
+    document.getElementById('resultHeader').textContent = `所有人員｜${year}年${parseInt(mon)}月`;
+
+    const totalCount = Object.values(allData).reduce((s, arr) => s + arr.length, 0);
+    const summaryEl = document.getElementById('resultSummary');
+    summaryEl.textContent = `共 ${Object.keys(allData).length} 類人員 ／ 總計 ${totalCount} 筆記錄`;
+    summaryEl.className = 'summary all';
+
+    // 渲染各人員分區
+    let html = '';
+    for (const name of ALL_NAMES) {
+      const records = allData[name] || [];
+
+      if (name.startsWith('代班')) {
+        // 代班：依不同的人展開獨立分組
+        const subGroups = {};
+        records.forEach(d => {
+          const m = d.name && d.name.match(/\((.+)\)/);
+          const subName = m ? m[1] : '未知';
+          if (!subGroups[subName]) subGroups[subName] = [];
+          subGroups[subName].push(d);
+        });
+
+        if (Object.keys(subGroups).length === 0) continue;
+
+        html += `<div class="person-section">
+          <div class="person-header">${name} <span class="person-count">${records.length} 筆</span></div>`;
+
+        for (const [subName, subRecords] of Object.entries(subGroups)) {
+          html += `<div style="padding-left:8px; margin-bottom:10px;">
+            <div style="font-size:12px; font-weight:700; color:#1a56a8; margin-bottom:6px; padding:6px 10px; background:#e8f0fe; border-radius:8px;">👤 ${subName}（${subRecords.length} 筆）</div>`;
+          html += subRecords.map(renderCard).join('');
+          html += '</div>';
+        }
+        html += '</div>';
+
+      } else {
+        // 正職人員
+        if (records.length === 0) continue;
+        html += `<div class="person-section">
+          <div class="person-header">${name} <span class="person-count">${records.length} 筆</span></div>`;
+        html += records.map(renderCard).join('');
+        html += '</div>';
+      }
+    }
+
+    document.getElementById('resultList').innerHTML = html || '<div class="no-data">此月份無任何考勤記錄</div>';
+    document.getElementById('exportBtn').classList.add('hidden');
+    document.getElementById('exportAllBtn').classList.toggle('hidden', totalCount === 0);
+    document.getElementById('resultSection').style.display = 'block';
+  } catch (err) {
+    hideLoading();
+    document.getElementById('queryBtn').disabled = false;
+    alert('查詢失敗：' + err.message);
+  }
+}
+
+// 個人匯出
 function exportExcel() {
-if (!currentRecords.length) return;
-
-// 由 n8n 產生 CSV，並用外部瀏覽器開啟下載連結（避開 LIFF 內建瀏覽器的下載限制）
-const url = `${N8N_EXPORT_URL}?name=${encodeURIComponent(currentName)}&month=${currentMonth}`;
-
-try {
-liff.openWindow({ url: url, external: true });
-} catch (e) {
-// 萬一不在 LIFF 環境中，直接開新分頁
-window.open(url, '_blank');
-}
+  if (!currentRecords.length) return;
+  const url = `${N8N_EXPORT_URL}?name=${encodeURIComponent(currentName)}&month=${currentMonth}`;
+  try { liff.openWindow({ url, external: true }); } catch(e) { window.open(url, '_blank'); }
 }
 
-// 跳至底部按鈕顯示控制
+// 所有人員匯出
+function exportAll() {
+  const url = `${N8N_EXPORT_URL}?name=all&month=${currentMonth}`;
+  try { liff.openWindow({ url, external: true }); } catch(e) { window.open(url, '_blank'); }
+}
+
+// 跳至底部
 window.addEventListener('scroll', function() {
   const btn = document.getElementById('scrollBottomBtn');
   const scrollable = document.documentElement.scrollHeight - window.innerHeight;
@@ -351,13 +489,9 @@ window.addEventListener('scroll', function() {
     btn.classList.remove('show');
   }
 });
-
 function scrollToBottom() {
   window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
 }
 </script>
-<!-- 跳至底部按鈕 -->
-<button id="scrollBottomBtn" onclick="scrollToBottom()" title="跳至底部">↓</button>
-
 </body>
 </html>
