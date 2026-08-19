@@ -311,12 +311,58 @@ liff.init({ liffId: LIFF_ID })
   const statusEl = document.getElementById('status');
   statusEl.textContent = '✅ 系統準備就緒，請選擇人員';
   statusEl.className = 'ready';
+  loadPersonList(); // LIFF 就緒後立刻載入人員清單
 })
 .catch((err) => {
   const statusEl = document.getElementById('status');
   statusEl.textContent = '❌ 初始化失敗：' + err.message;
   statusEl.className = 'error';
 });
+
+// 頁面載入時預先撈人員清單（不含月份載入）
+async function loadPersonList() {
+  try {
+    const res = await fetch(`${N8N_QUERY_URL}?name=&month=all`);
+    const data = JSON.parse(await res.text());
+
+    const nameSet = new Set();
+    data.filter(r => r.name).forEach(r => nameSet.add(r.name));
+
+    // 排序：正職早班 → 正職晚班 → 代班早班各人 → 代班晚班各人
+    // 判斷方式：有 shift 欄位的正職依 shift 排；代班依前綴再依名字排
+    const allNames = [...nameSet].sort((a, b) => {
+      const aIsSubst = a.startsWith('代班');
+      const bIsSubst = b.startsWith('代班');
+      if (aIsSubst !== bIsSubst) return aIsSubst ? 1 : -1;
+      if (!aIsSubst && !bIsSubst) {
+        // 正職：找 shift 排序，早班 < 晚班
+        const aRec = data.find(r => r.name === a);
+        const bRec = data.find(r => r.name === b);
+        const aShift = aRec?.shift || '';
+        const bShift = bRec?.shift || '';
+        if (aShift !== bShift) return aShift === '早班' ? -1 : 1;
+        return a.localeCompare(b, 'zh-TW');
+      }
+      // 代班：代班早班 < 代班晚班，同前綴再按括號內名字
+      const aPrefix = a.startsWith('代班早班') ? 0 : 1;
+      const bPrefix = b.startsWith('代班早班') ? 0 : 1;
+      if (aPrefix !== bPrefix) return aPrefix - bPrefix;
+      return a.localeCompare(b, 'zh-TW');
+    });
+
+    ALL_NAMES = allNames;
+
+    const sel = document.getElementById('nameSelect');
+    sel.innerHTML = `
+      <option value="">-- 請選擇 --</option>
+      <option value="all" style="color:#1a56a8; font-weight:700;">★ 所有人員（需密碼）</option>
+      ${allNames.map(n => `<option value="${n}">${n}</option>`).join('')}
+    `;
+  } catch(e) {
+    // 載入失敗不影響頁面，靜默處理
+    console.warn('人員清單載入失敗：', e.message);
+  }
+}
 
 
 
@@ -363,16 +409,13 @@ async function onNameChange() {
     });
     ALL_NAMES = allNames;
 
-    // 更新下拉選單（保留 all 選項，動態加入實際人名）
+    // 更新下拉選單（若有新人名才更新，維持目前選取值）
     const currentSelect = document.getElementById('nameSelect');
-    const currentVal = currentSelect.value;
     currentSelect.innerHTML = `
       <option value="">-- 請選擇 --</option>
       <option value="all" style="color:#1a56a8; font-weight:700;">★ 所有人員（需密碼）</option>
-      ${allNames.map(n => `<option value="${n}" ${n === currentVal ? 'selected' : ''}>${n}</option>`).join('')}
+      ${allNames.map(n => `<option value="${n}" ${n === name ? 'selected' : ''}>${n}</option>`).join('')}
     `;
-    // 維持目前選取值
-    currentSelect.value = name;
 
     // 整理月份
     const months = [...new Set(data.filter(r => r.date).map(r => r.date.substring(0, 7)))].sort().reverse();
