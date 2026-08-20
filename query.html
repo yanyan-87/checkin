@@ -329,24 +329,19 @@ async function loadPersonList() {
     data.filter(r => r.name).forEach(r => nameSet.add(r.name));
 
     // 排序：正職早班 → 正職晚班 → 代班早班各人 → 代班晚班各人
-    // 判斷方式：有 shift 欄位的正職依 shift 排；代班依前綴再依名字排
+    // 用名字+資料的 shift 欄位判斷，代班用前綴
+    function getSortKey(name, data) {
+      if (name.startsWith('代班早班')) return 3;
+      if (name.startsWith('代班晚班')) return 4;
+      // 正職：找這個人的 shift（取第一筆有 shift 的記錄）
+      const rec = data.find(r => r.name === name && r.shift);
+      const shift = rec?.shift || '';
+      return shift === '晚班' ? 2 : 1; // 早班=1，晚班=2，未知預設早班
+    }
     const allNames = [...nameSet].sort((a, b) => {
-      const aIsSubst = a.startsWith('代班');
-      const bIsSubst = b.startsWith('代班');
-      if (aIsSubst !== bIsSubst) return aIsSubst ? 1 : -1;
-      if (!aIsSubst && !bIsSubst) {
-        // 正職：找 shift 排序，早班 < 晚班
-        const aRec = data.find(r => r.name === a);
-        const bRec = data.find(r => r.name === b);
-        const aShift = aRec?.shift || '';
-        const bShift = bRec?.shift || '';
-        if (aShift !== bShift) return aShift === '早班' ? -1 : 1;
-        return a.localeCompare(b, 'zh-TW');
-      }
-      // 代班：代班早班 < 代班晚班，同前綴再按括號內名字
-      const aPrefix = a.startsWith('代班早班') ? 0 : 1;
-      const bPrefix = b.startsWith('代班早班') ? 0 : 1;
-      if (aPrefix !== bPrefix) return aPrefix - bPrefix;
+      const ka = getSortKey(a, data);
+      const kb = getSortKey(b, data);
+      if (ka !== kb) return ka - kb;
       return a.localeCompare(b, 'zh-TW');
     });
 
@@ -381,7 +376,7 @@ async function onNameChange() {
       document.getElementById('pwInput').value = '';
       document.getElementById('pwError').textContent = '';
       document.getElementById('pwModal').classList.add('show');
-      setTimeout(() => document.getElementById('pwInput').focus(), 100);
+      // 不自動 focus，避免 LIFF 內鍵盤跳出又縮回
       return;
     } else {
       // 已驗證，直接載入月份，不重新渲染人員選單
@@ -468,16 +463,17 @@ async function loadMonthsForAll() {
     // 同步更新 ALL_NAMES（不動 select）
     const nameSet = new Set();
     data.filter(r => r.name).forEach(r => nameSet.add(r.name));
+    function getSortKey2(name, data) {
+      if (name.startsWith('代班早班')) return 3;
+      if (name.startsWith('代班晚班')) return 4;
+      const rec = data.find(r => r.name === name && r.shift);
+      const shift = rec?.shift || '';
+      return shift === '晚班' ? 2 : 1;
+    }
     ALL_NAMES = [...nameSet].sort((a, b) => {
-      const aS = a.startsWith('代班'), bS = b.startsWith('代班');
-      if (aS !== bS) return aS ? 1 : -1;
-      const aRec = data.find(r => r.name === a);
-      const bRec = data.find(r => r.name === b);
-      const aShift = aRec?.shift || '', bShift = bRec?.shift || '';
-      if (!aS && !bS && aShift !== bShift) return aShift === '早班' ? -1 : 1;
-      const aP = a.startsWith('代班早班') ? 0 : 1;
-      const bP = b.startsWith('代班早班') ? 0 : 1;
-      if (aP !== bP) return aP - bP;
+      const ka = getSortKey2(a, data);
+      const kb = getSortKey2(b, data);
+      if (ka !== kb) return ka - kb;
       return a.localeCompare(b, 'zh-TW');
     });
     const months = [...new Set(data.filter(r => r.date).map(r => r.date.substring(0,7)))].sort().reverse();
@@ -679,7 +675,7 @@ async function queryAll(month) {
           const earlyLeave = hasOut && outMin < (isNight ? 405  : 1125);
 
           const inClass  = late ? 'cell-late' : '';
-          const outClass = earlyLeave ? 'cell-early' : '';
+          const outClass = ''; // 早退不變色
           const inVal    = hasIn  ? d['上班時間'] : '<span class="cell-empty">—</span>';
           const outVal   = hasOut ? d['下班時間'] : '<span class="cell-empty">—</span>';
 
