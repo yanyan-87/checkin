@@ -293,7 +293,7 @@ function renderCard(d) {
     ${displayName ? `<span class="name-tag">👤 ${displayName}</span>` : ''}
     ${isHoliday ? '<span class="holiday-tag">🏖️ 休假</span>' : ''}
     ${!isHoliday && hasIn && late ? '<span class="late-tag">⚠️ 遲到</span>' : ''}
-    ${!isHoliday && hasOut && earlyLeave ? '<span class="early-tag">⏰ 早退</span>' : ''}
+
   </div>
   <div class="record-row">
     <span>🟢 上班</span>${inDisplay}
@@ -383,6 +383,10 @@ async function onNameChange() {
       document.getElementById('pwModal').classList.add('show');
       setTimeout(() => document.getElementById('pwInput').focus(), 100);
       return;
+    } else {
+      // 已驗證，直接載入月份，不重新渲染人員選單
+      loadMonthsForAll();
+      return;
     }
   }
 
@@ -441,11 +445,53 @@ function confirmPassword() {
   if (pw === PASSWORD) {
     passwordVerified = true;
     document.getElementById('pwModal').classList.remove('show');
-    onNameChange(); // 觸發月份載入
+    // 確保選單維持 all，再載入月份
+    document.getElementById('nameSelect').value = 'all';
+    loadMonthsForAll();
   } else {
     document.getElementById('pwError').textContent = '密碼錯誤，請重試';
     document.getElementById('pwInput').value = '';
     document.getElementById('pwInput').focus();
+  }
+}
+
+// 專門給「所有人員」載入月份用，不重新渲染人員選單
+async function loadMonthsForAll() {
+  const monthGroup = document.getElementById('monthGroup');
+  const monthSelect = document.getElementById('monthSelect');
+  monthGroup.style.display = 'block';
+  monthSelect.innerHTML = '<option value="">-- 載入中 --</option>';
+  showLoading('載入月份資料中...');
+  try {
+    const res = await fetch(`${N8N_QUERY_URL}?name=&month=all`);
+    const data = JSON.parse(await res.text());
+    // 同步更新 ALL_NAMES（不動 select）
+    const nameSet = new Set();
+    data.filter(r => r.name).forEach(r => nameSet.add(r.name));
+    ALL_NAMES = [...nameSet].sort((a, b) => {
+      const aS = a.startsWith('代班'), bS = b.startsWith('代班');
+      if (aS !== bS) return aS ? 1 : -1;
+      const aRec = data.find(r => r.name === a);
+      const bRec = data.find(r => r.name === b);
+      const aShift = aRec?.shift || '', bShift = bRec?.shift || '';
+      if (!aS && !bS && aShift !== bShift) return aShift === '早班' ? -1 : 1;
+      const aP = a.startsWith('代班早班') ? 0 : 1;
+      const bP = b.startsWith('代班早班') ? 0 : 1;
+      if (aP !== bP) return aP - bP;
+      return a.localeCompare(b, 'zh-TW');
+    });
+    const months = [...new Set(data.filter(r => r.date).map(r => r.date.substring(0,7)))].sort().reverse();
+    hideLoading();
+    if (months.length === 0) { monthSelect.innerHTML = '<option value="">-- 無資料 --</option>'; return; }
+    monthSelect.innerHTML = months.map((m, i) => {
+      const [y, mo] = m.split('-');
+      return `<option value="${m}" ${i===0?'selected':''}>${y}年${parseInt(mo)}月</option>`;
+    }).join('');
+    document.getElementById('queryBtn').disabled = false;
+  } catch(e) {
+    hideLoading();
+    monthSelect.innerHTML = '<option value="">-- 載入失敗 --</option>';
+    alert('載入月份失敗：' + e.message);
   }
 }
 
@@ -642,7 +688,6 @@ async function queryAll(month) {
           else if (!hasIn) notes.push('未打上班卡');
           else if (!hasOut) notes.push('未打下班卡');
           if (late) notes.push('<span class="cell-note-late">遲到</span>');
-          if (earlyLeave) notes.push('<span class="cell-note-early">早退</span>');
 
           html += `<td class="${inClass}">${inVal}</td><td class="${outClass}">${outVal}</td><td>${notes.join(' ')}</td>`;
         }
